@@ -15,49 +15,49 @@ jobs:
 
     steps:
       - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
- - name: SonarQube Scan
-      uses: sonarsource/sonarqube-scan-action@master
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        SONAR_HOST_URL: https://sonarcloud.io
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
 
- - name: OWASP Dependency-Check
-      uses: dependency-check/Dependency-Check_Action@main
-      with:
-        format: 'SARIF'
-        args: '--out dependency-check-report'
+      - name: OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          format: 'SARIF'
+          args: '--out dependency-check-report'
 
- - name: Upload SARIF to GitHub Security
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: dependency-check-report.sarif
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: dependency-check-report.sarif
 
- - name: Fail on Critical or High Vulnerabilities
-      run: |
-        echo "Checking for Critical/High vulnerabilities..."
-        if grep -q -i '"severity" : "CRITICAL"' dependency-check-report.json || grep -q -i '"severity" : "HIGH"' dependency-check-report.json; then
-          echo "CRITICAL or HIGH vulnerability found! Blocking deployment!"
-          exit 1
-        else
-          echo "No Critical/High vulnerabilities found. Proceeding..."
-        fi
+      - name: Fail on Critical or High Vulnerabilities
+        run: |
+          echo "Checking for Critical/High vulnerabilities..."
+          if grep -q -i '"severity" : "CRITICAL"' dependency-check-report.json || grep -q -i '"severity" : "HIGH"' dependency-check-report.json; then
+            echo "CRITICAL or HIGH vulnerability found! Blocking deployment!"
+            exit 1
+          else
+            echo "No Critical/High vulnerabilities found. Proceeding..."
+          fi
 
- - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
- - name: Build and Push Docker Image
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/secure-cicd-demo:latest
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/secure-cicd-demo:latest
 
- - name: Success
-      run: echo "Deployed securely with ZERO Critical/High vulns!"
+      - name: Success
+        run: echo "Deployed securely with ZERO Critical/High vulns!"
