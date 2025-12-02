@@ -28,7 +28,7 @@ jobs:
           SONAR_HOST_URL: https://sonarcloud.io
 
       - name: OWASP Dependency-Check
-        uses: dependency-check/Dependency-Check_Action@main  # FIXED - @main tag
+        uses: dependency-check/Dependency-Check_Action@main
         with:
           project: 'secure-cicd-demo'
           path: '.'
@@ -37,7 +37,7 @@ jobs:
 
       - name: Upload SARIF (if file exists)
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4  # FIXED - v4 for deprecation
         with:
           sarif_file: reports/dependency-check-report.sarif
 
@@ -55,14 +55,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push Docker Image
+      - name: Build & Push Docker Image  # FIXED - cache disabled
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: jdcyber1/secure-cicd-demo:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Final Success
         if: success()
