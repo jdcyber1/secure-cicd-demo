@@ -1,4 +1,4 @@
-name: Secure CI/CD Pipeline - Fixed Version
+name: Secure CI/CD Pipeline - Final Fixed
 
 on:
   push:
@@ -19,52 +19,48 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: SonarQube Scan (non-blocking for fix)
-        uses: sonarsource/sonarqube-scan-action@master
+      - name: SonarQube Scan (non-blocking)
+        id: sonar
+        uses: sonarsource/sonarqube-scan-action@v1  # Updated version
         continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
 
-      - name: OWASP Dependency-Check (non-blocking)
-        uses: dependency-check/Dependency-Check_Action@main
-        continue-on-error: true
+      - name: OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@v2  # Updated
         with:
+          project: 'secure-cicd-demo'
+          path: '.'
           format: 'SARIF'
+          out: 'reports'  # Fixed path
 
-      - name: Upload SARIF (if available)
+      - name: Upload SARIF (if file exists)
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v3  # v4 deprecation warning ignore for now, or change to v4 if ready
         with:
-          sarif_file: dependency-check-report.sarif
+          sarif_file: reports/dependency-check-report.sarif  # Fixed path
 
-      - name: Check Vulns & Block Critical (simple grep)
-        continue-on-error: false
+      - name: Block on Critical/High Vulns
         run: |
-          if [ -f dependency-check-report.json ] && (grep -qi '"severity":"CRITICAL"' dependency-check-report.json || grep -qi '"severity":"HIGH"' dependency-check-report.json); then
-            echo "🚨 CRITICAL/HIGH VULN FOUND - BLOCKING!"
+          if [ -f reports/dependency-check-report.json ] && (grep -qi '"severity":"CRITICAL"' reports/dependency-check-report.json || grep -qi '"severity":"HIGH"' reports/dependency-check-report.json); then
+            echo "🚨 CRITICAL/HIGH VULN - BLOCKING!"
             exit 1
           fi
-          echo "✅ No critical/high vulns - safe!"
+          echo "✅ Safe - No critical vulns"
 
-      - name: Debug Docker Secrets
-        run: |
-          echo "DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}"
-          echo "DOCKER_TOKEN length: $(echo '${{ secrets.DOCKER_PASSWORD }}' | wc -c) chars"
-
-      - name: Docker Login
+      - name: Docker Login & Debug
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push Docker Image (with debug)
-        uses: docker/build-push-action@v6
+      - name: Build & Push Docker Image
+        uses: docker/build-push-action@v5  # Updated
         with:
           context: .
           push: true
           tags: jdcyber1/secure-cicd-demo:latest
-          load: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
